@@ -1,5 +1,7 @@
 Original,Level1
-Heart,[organic]
-Viral,[external]
-Cancer,[organic]
-Bacteria,[external]
+heart,[organic]
+viral,[external]
+cancer,[disease]
+bacteria,[external]
+kidney,[organic]
+diabetes,[disease]

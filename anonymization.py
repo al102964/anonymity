@@ -1,38 +1,43 @@
-#import jnius_config
 from cn.protect import Protect
 from cn.protect.privacy import KAnonymity
 from cn.protect.quality import Loss
 from cn.protect.hierarchy import DataHierarchy, OrderHierarchy, IntervalHierarchy
 import pandas as pd
+import argparse
 
-pd.set_option('display.max_rows', 50)
+def parse_arguments():
+    """Manage input arguments for program"""
+    ap = argparse.ArgumentParser()    
+    ap.add_argument("-k", "--anonymity_level", required=True, help="first operand")
+    ap.add_argument("-d", "--input_file", required=True, help="second operand")
+    ap.add_argument("-o", "--output_file", required=True, help="second operand")
+    args = vars(ap.parse_args())
+    return args
 
-dataset = pd.read_csv("data/data.csv")
-print(dataset.head())
+def main(args):
+    """Main function actually do the anonymization and save result to specified file"""
+    dataset = pd.read_csv(args["input_file"])
+    print(dataset.head())
 
-prot = Protect(dataset,KAnonymity(2))
-prot.quality_model = Loss()
+    prot = Protect(dataset,KAnonymity(args["anonymity_level"]))
+    prot.quality_model = Loss()
 
-prot.supression = .1
+    prot.supression = .2
 
-for col in dataset.columns:
-    print(col)    
-    prot.itypes[col] = 'quasi'
-#prot.itypes.PassengerId = 'identifying'
-#prot.itypes.Name = 'identifying'
-#prot.itypes.Ticket = 'identifying'
-prot.itypes.ZipCode = 'identifying'
+    for col in dataset.columns:        
+        prot.itypes[col] = 'quasi'
 
-prot.hierarchies.Age = OrderHierarchy('interval',2,2,2,2,2,2)
-prot.hierarchies.Nationality = DataHierarchy(pd.read_csv("data/Nationality.csv"))
-prot.hierarchies.Condition = DataHierarchy(pd.read_csv("data/Condition.csv"))
-#prot.hierarchies.ZipCode = IntervalHierarchy(pd.read_csv("data/ZipCode.csv"))
+    prot.hierarchies.Age = OrderHierarchy('interval',5,2,2,2,2)
+    prot.hierarchies.Nationality = DataHierarchy(pd.read_csv("data/Nationality.csv"))
+    prot.hierarchies.Condition = DataHierarchy(pd.read_csv("data/Condition.csv"))
+    prot.hierarchies.Gender = DataHierarchy(pd.read_csv("data/Gender.csv"))
+    prot.hierarchies.ZipCode = OrderHierarchy('interval',1000,2,2,2,2)
 
-prot.hierarchies.ZipCode = IntervalHierarchy(intervals=[[12000,19999]],fanouts=[[1]])
-#prot.hierarchies.Fare = OrderHierarchy('interval',10,2,2,2,2)
-priv = prot.protect()
-print(priv)
-print(type(priv))
-#print(priv[["Age"]])
-priv.to_csv("salida.csv")
-print(prot.stats)
+    priv = prot.protect()
+    print(priv)
+    priv.to_csv(args["output_file"],index=False)
+    print(prot.stats)
+
+if __name__ == '__main__':
+    arguments = parse_arguments()
+    main(arguments)
